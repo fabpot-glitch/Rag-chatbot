@@ -1,7 +1,6 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from app.rag_pipeline import load_qa_chain
 
 app = FastAPI(title="RAG Chatbot API")
 
@@ -12,9 +11,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Loading QA chain...")
-qa_chain = load_qa_chain()
-print("API Ready!")
+qa_chain = None
+
+def get_qa_chain():
+    global qa_chain
+    if qa_chain is None:
+        from app.rag_pipeline import load_qa_chain
+        qa_chain = load_qa_chain()
+    return qa_chain
 
 @app.get("/")
 def home():
@@ -25,7 +29,8 @@ def ask(question: str):
     if not question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
     try:
-        result = qa_chain.invoke({"query": question})
+        chain = get_qa_chain()
+        result = chain.invoke({"query": question})
         return {"question": question, "answer": result["result"]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
