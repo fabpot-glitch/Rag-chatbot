@@ -1,0 +1,21 @@
+﻿from fpdf import FPDF
+import os
+
+os.makedirs("data", exist_ok=True)
+pdf = FPDF()
+pdf.add_page()
+pdf.set_font("Arial", "B", 16)
+pdf.cell(0, 10, "AI and RAG Guide", ln=True, align="C")
+pdf.ln(5)
+pdf.set_font("Arial", size=11)
+pdf.multi_cell(0, 8, "Artificial Intelligence is the simulation of human intelligence by machines.")
+pdf.ln(3)
+pdf.multi_cell(0, 8, "Machine Learning is a subset of AI that learns patterns from data.")
+pdf.ln(3)
+pdf.multi_cell(0, 8, "LangChain is a framework for building LLM-powered RAG applications.")
+pdf.ln(3)
+pdf.multi_cell(0, 8, "FAISS is a vector similarity search library by Meta for storing embeddings.")
+pdf.ln(3)
+pdf.multi_cell(0, 8, "RAG combines document retrieval with language generation for grounded answers.")
+pdf.output("data/sample.pdf")
+print("Done! sample.pdf created in data/")
