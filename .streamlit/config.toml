@@ -6,3 +6,4 @@ headless = true
 [browser] 
 gatherUsageStats = false 
 serverAddress = "0.0.0.0" 
+baseUrlPath = "" 
