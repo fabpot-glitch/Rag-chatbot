@@ -75,9 +75,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── API URL ──────────────────────────────────────────────────────────────────
-API_URL = "http://127.0.0.1:8000"
-# After deploying to Render, comment above and uncomment below:
-# API_URL = "https://your-app-name.onrender.com"
+API_URL = "https://rag-chatbot-2-4ia8.onrender.com"
 
 # ─── Header ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-title">🧠 DocuMind AI</div>', unsafe_allow_html=True)
@@ -128,8 +126,8 @@ if prompt := st.chat_input("Ask a question about your document..."):
             except requests.exceptions.ConnectionError:
                 answer = (
                     "⚠️ Unable to reach the backend server.\n\n"
-                    "Please ensure the API is running:\n\n"
-                    "```\nuvicorn app.main:app --reload\n```"
+                    "Please ensure the API is running at:\n\n"
+                    f"`{API_URL}`"
                 )
             except requests.exceptions.Timeout:
                 answer = "⚠️ The request timed out. The server may be starting up — please try again."
@@ -163,6 +161,3 @@ with st.sidebar:
 
     st.divider()
     st.caption("© 2026 DocuMind AI. All rights reserved.")
-
-
-    
