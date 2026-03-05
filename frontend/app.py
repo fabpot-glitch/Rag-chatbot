@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 from datetime import datetime
+import time
 
 st.set_page_config(
     page_title="DocuMind AI",
@@ -77,6 +78,16 @@ st.markdown("""
 # ─── API URL ──────────────────────────────────────────────────────────────────
 API_URL = "https://rag-chatbot-2-4ia8.onrender.com"
 
+# ─── Wake up backend on app load ─────────────────────────────────────────────
+@st.cache_data(ttl=300)
+def wake_backend():
+    try:
+        requests.get(f"{API_URL}/health", timeout=10)
+    except:
+        pass
+
+wake_backend()
+
 # ─── Header ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-title">🧠 DocuMind AI</div>', unsafe_allow_html=True)
 st.markdown('<div class="main-subtitle">Intelligent document assistant — ask anything about your PDF</div>', unsafe_allow_html=True)
@@ -113,26 +124,34 @@ if prompt := st.chat_input("Ask a question about your document..."):
     st.session_state.messages.append({"role": "user", "content": prompt, "time": now})
 
     with st.chat_message("assistant"):
-        with st.spinner("Analysing document..."):
-            try:
-                resp = requests.get(
-                    f"{API_URL}/ask",
-                    params={"question": prompt},
-                    timeout=30
-                )
-                resp.raise_for_status()
-                answer = resp.json()["answer"]
+        answer = None
+        for attempt in range(3):
+            with st.spinner(f"Analysing document{'...' if attempt == 0 else ' (server waking up, please wait...)'}"):
+                try:
+                    resp = requests.get(
+                        f"{API_URL}/ask",
+                        params={"question": prompt},
+                        timeout=60
+                    )
+                    resp.raise_for_status()
+                    answer = resp.json()["answer"]
+                    break
 
-            except requests.exceptions.ConnectionError:
-                answer = (
-                    "⚠️ Unable to reach the backend server.\n\n"
-                    "Please ensure the API is running at:\n\n"
-                    f"`{API_URL}`"
-                )
-            except requests.exceptions.Timeout:
-                answer = "⚠️ The request timed out. The server may be starting up — please try again."
-            except Exception as e:
-                answer = f"⚠️ An unexpected error occurred: `{str(e)}`"
+                except requests.exceptions.ConnectionError:
+                    answer = (
+                        "⚠️ Unable to reach the backend server.\n\n"
+                        f"Please check the API is running at:\n\n`{API_URL}`"
+                    )
+                    break
+                except requests.exceptions.Timeout:
+                    if attempt < 2:
+                        time.sleep(5)
+                        continue
+                    else:
+                        answer = "⚠️ Server is taking too long to respond. Please try again in 30 seconds."
+                except Exception as e:
+                    answer = f"⚠️ An unexpected error occurred: `{str(e)}`"
+                    break
 
         st.markdown(answer)
         st.caption(now)
