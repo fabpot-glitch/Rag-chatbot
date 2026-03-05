@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime
 import time
+import threading
 
 st.set_page_config(
     page_title="DocuMind AI",
@@ -12,10 +13,7 @@ st.set_page_config(
 # ─── Custom CSS ───────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Main background */
     .stApp { background-color: #0f1117; }
-
-    /* Title styling */
     .main-title {
         font-size: 2.2rem;
         font-weight: 700;
@@ -28,26 +26,18 @@ st.markdown("""
         margin-top: -10px;
         margin-bottom: 20px;
     }
-
-    /* Chat bubbles */
     .stChatMessage {
         border-radius: 12px;
         padding: 4px 8px;
     }
-
-    /* Input box */
     .stChatInputContainer {
         border-top: 1px solid #2a2d3e;
         padding-top: 12px;
     }
-
-    /* Sidebar */
     section[data-testid="stSidebar"] {
         background-color: #13151f;
         border-right: 1px solid #1e2030;
     }
-
-    /* Status badge */
     .status-badge {
         display: inline-block;
         background-color: #1a2e1a;
@@ -59,8 +49,6 @@ st.markdown("""
         font-weight: 600;
         margin-bottom: 16px;
     }
-
-    /* Sidebar section headers */
     .sidebar-label {
         font-size: 0.7rem;
         font-weight: 700;
@@ -69,8 +57,6 @@ st.markdown("""
         letter-spacing: 1px;
         margin-bottom: 6px;
     }
-
-    /* Hide Streamlit branding */
     #MainMenu, footer, header { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
@@ -78,15 +64,20 @@ st.markdown("""
 # ─── API URL ──────────────────────────────────────────────────────────────────
 API_URL = "https://rag-chatbot-2-4ia8.onrender.com"
 
-# ─── Wake up backend on app load ─────────────────────────────────────────────
-@st.cache_data(ttl=300)
-def wake_backend():
+# ─── Wake backend in background on every page load ───────────────────────────
+def ping_backend():
     try:
-        requests.get(f"{API_URL}/health", timeout=10)
+        requests.get(f"{API_URL}/health", timeout=15)
     except:
         pass
 
-wake_backend()
+threading.Thread(target=ping_backend, daemon=True).start()
+
+# ─── Time helper (India timezone IST) ────────────────────────────────────────
+def get_ist_time():
+    from datetime import timezone, timedelta
+    ist = timezone(timedelta(hours=5, minutes=30))
+    return datetime.now(ist).strftime("%I:%M %p")
 
 # ─── Header ──────────────────────────────────────────────────────────────────
 st.markdown('<div class="main-title">🧠 DocuMind AI</div>', unsafe_allow_html=True)
@@ -98,7 +89,7 @@ st.divider()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ─── Welcome message (shown only once) ───────────────────────────────────────
+# ─── Welcome message ─────────────────────────────────────────────────────────
 if not st.session_state.messages:
     with st.chat_message("assistant"):
         st.markdown(
@@ -116,7 +107,7 @@ for msg in st.session_state.messages:
 # ─── Chat input ───────────────────────────────────────────────────────────────
 if prompt := st.chat_input("Ask a question about your document..."):
 
-    now = datetime.now().strftime("%I:%M %p")
+    now = get_ist_time()
 
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -126,12 +117,13 @@ if prompt := st.chat_input("Ask a question about your document..."):
     with st.chat_message("assistant"):
         answer = None
         for attempt in range(3):
-            with st.spinner(f"Analysing document{'...' if attempt == 0 else ' (server waking up, please wait...)'}"):
+            spinner_msg = "Analysing document..." if attempt == 0 else f"Server is waking up, retrying (attempt {attempt + 1}/3)..."
+            with st.spinner(spinner_msg):
                 try:
                     resp = requests.get(
                         f"{API_URL}/ask",
                         params={"question": prompt},
-                        timeout=60
+                        timeout=90
                     )
                     resp.raise_for_status()
                     answer = resp.json()["answer"]
@@ -140,15 +132,15 @@ if prompt := st.chat_input("Ask a question about your document..."):
                 except requests.exceptions.ConnectionError:
                     answer = (
                         "⚠️ Unable to reach the backend server.\n\n"
-                        f"Please check the API is running at:\n\n`{API_URL}`"
+                        f"Please check: `{API_URL}`"
                     )
                     break
                 except requests.exceptions.Timeout:
                     if attempt < 2:
-                        time.sleep(5)
+                        time.sleep(10)
                         continue
                     else:
-                        answer = "⚠️ Server is taking too long to respond. Please try again in 30 seconds."
+                        answer = "⚠️ Server is taking too long. Please send your message again — it should work now that the server is awake."
                 except Exception as e:
                     answer = f"⚠️ An unexpected error occurred: `{str(e)}`"
                     break
