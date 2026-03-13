@@ -62,9 +62,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── API URL ──────────────────────────────────────────────────────────────────
-API_URL = "https://rag-chatbot-2-4ia8.onrender.com"
+API_URL =  "https://Nikhitha-nikhi12-Rag-chatbot.hf.space"
 
-# ─── Wake backend in background on every page load ───────────────────────────
+# ─── Wake backend in background ──────────────────────────────────────────────
 def ping_backend():
     try:
         requests.get(f"{API_URL}/health", timeout=15)
@@ -73,7 +73,7 @@ def ping_backend():
 
 threading.Thread(target=ping_backend, daemon=True).start()
 
-# ─── Time helper (India timezone IST) ────────────────────────────────────────
+# ─── Time helper (IST) ───────────────────────────────────────────────────────
 def get_ist_time():
     from datetime import timezone, timedelta
     ist = timezone(timedelta(hours=5, minutes=30))
@@ -117,7 +117,7 @@ if prompt := st.chat_input("Ask a question about your document..."):
     with st.chat_message("assistant"):
         answer = None
         for attempt in range(3):
-            spinner_msg = "Analysing document..." if attempt == 0 else f"Server is waking up, retrying (attempt {attempt + 1}/3)..."
+            spinner_msg = "Analysing document..." if attempt == 0 else f"Retrying (attempt {attempt + 1}/3)..."
             with st.spinner(spinner_msg):
                 try:
                     resp = requests.get(
@@ -132,15 +132,16 @@ if prompt := st.chat_input("Ask a question about your document..."):
                 except requests.exceptions.ConnectionError:
                     answer = (
                         "⚠️ Unable to reach the backend server.\n\n"
-                        f"Please check: `{API_URL}`"
+                        "Make sure it is running:\n\n"
+                        "`uvicorn app.main:app --reload --port 8001`"
                     )
                     break
                 except requests.exceptions.Timeout:
                     if attempt < 2:
-                        time.sleep(10)
+                        time.sleep(5)
                         continue
                     else:
-                        answer = "⚠️ Server is taking too long. Please send your message again — it should work now that the server is awake."
+                        answer = "⚠️ Server is taking too long. Please try again."
                 except Exception as e:
                     answer = f"⚠️ An unexpected error occurred: `{str(e)}`"
                     break
