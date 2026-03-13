@@ -36,10 +36,10 @@ def load_qa_chain():
     )
     retriever = vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 3}
+        search_kwargs={"k": 2}  # reduced from 3 to 2 for speed
     )
     llm = ChatGroq(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",  # faster than llama-3.3-70b-versatile
         temperature=0,
         groq_api_key=GROQ_API_KEY
     )
