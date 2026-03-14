@@ -15,7 +15,7 @@ pinned: false
 
 ## Live Demo
 
-**Frontend:** [https://rag-model-fs3cskdnkkf5eqxlzslujn.streamlit.app/](https://rag-model-fs3cskdnkkf5eqxlzslujn.streamlit.app/)
+**Frontend:** [https://rag-chatbot-nlytlf5f2wxpwzcrynukvv.streamlit.app/](https://rag-chatbot-nlytlf5f2wxpwzcrynukvv.streamlit.app/)
 
 **Backend API:** [https://nikhitha-nikhi12-rag-chatbot.hf.space](https://nikhitha-nikhi12-rag-chatbot.hf.space)
 
